@@ -111,7 +111,9 @@ const loginUser = asyncHandler(async (req, res) => {
     throw new ApiError(404, "user not found");
   }
 
-  const isPasswordValid = user.isCorrectPassword(password);
+  const isPasswordValid = await user.isCorrectPassword(password);
+
+
 
   if (!isPasswordValid) {
     throw new ApiError(401, "password is wrong");
@@ -218,4 +220,38 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
     );
 });
 
-export { registerUser, loginUser, logoutUser, refreshAccessToken };
+const changeCurrentPassword = asyncHandler(async (req, res) => {
+  const { oldPassword, newPassword } = req.body;
+
+  const user = await User.findById(req.user?._id);
+
+  const isPasswordCorrect = await user.isCorrectPassword(oldPassword);
+
+  if (!isPasswordCorrect) {
+    throw new ApiError(400, "wrong password");
+  }
+
+  user.password = newPassword;
+
+  await user.save({ validateBeforeSave: false });
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, {}, "password is updated successfully"));
+});
+
+const currentUser = asyncHandler(async (req, res) => {
+  console.log(req.user);
+  return res
+    .status(200)
+    .json(new ApiResponse(200, req.user, "this is the current user"));
+});
+
+export {
+  registerUser,
+  loginUser,
+  logoutUser,
+  refreshAccessToken,
+  changeCurrentPassword,
+  currentUser
+};
